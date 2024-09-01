@@ -88,12 +88,7 @@ window.turtle = function(canvas) {
         visible: true,
         wrap: true,
         shape: turtle_shapes.triangle,
-        colour: {
-            r: 0,
-            g: 0,
-            b: 0,
-            a: 1
-        },
+        color: 'white',
         canvas: turtle_canvas,
         context: turtle_canvas.getContext('2d'),
     });
@@ -149,43 +144,44 @@ window.turtle = function(canvas) {
         distance = +distance;
 
         ctx.save();
-        ctx.beginPath();
+            ctx.strokeStyle = turtle.color;
+            ctx.beginPath();
 
-        var {width, height} = canvas,
-            max_x = width / 2,
-            min_x = -max_x,
-            max_y = height / 2,
-            min_y = -max_y,
-            {x, y} = turtle.pos;
+            var {width, height} = canvas,
+                max_x = width / 2,
+                min_x = -max_x,
+                max_y = height / 2,
+                min_y = -max_y,
+                {x, y} = turtle.pos;
 
-        while (distance > 0) {
-            ctx.moveTo(x, y);
+            while (distance > 0) {
+                ctx.moveTo(x, y);
 
-            var {sin, cos} = turtle,
-                new_x = x + sin * distance,
-                new_y = y + cos * distance;
+                var {sin, cos} = turtle,
+                    new_x = x + sin * distance,
+                    new_y = y + cos * distance;
 
-            switch (turtle.wrap) {
-                case new_x > max_x: {
-                    distance -= line_to_x_boundary(max_x);
-                } break;
-                case new_x < min_x: {
-                    distance -= line_to_x_boundary(min_x);
-                } break;
-                case new_y > max_y: {
-                    distance -= line_to_y_boundary(max_y);
-                } break;
-                case new_y < min_y: {
-                    distance -= line_to_y_boundary(min_y);
-                } break;
-                default: {
-                    line_to(new_x, new_y);
-                    distance = 0;
+                switch (turtle.wrap) {
+                    case new_x > max_x: {
+                        distance -= line_to_x_boundary(max_x);
+                    } break;
+                    case new_x < min_x: {
+                        distance -= line_to_x_boundary(min_x);
+                    } break;
+                    case new_y > max_y: {
+                        distance -= line_to_y_boundary(max_y);
+                    } break;
+                    case new_y < min_y: {
+                        distance -= line_to_y_boundary(min_y);
+                    } break;
+                    default: {
+                        line_to(new_x, new_y);
+                        distance = 0;
+                    }
                 }
-            }
 
-            turtle.penDown && ctx.stroke();
-            turtle.draw();
+                turtle.penDown && ctx.stroke();
+                turtle.draw();
             ctx.restore();
         }
     }
