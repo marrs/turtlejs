@@ -9,11 +9,20 @@
     </head>
     <body>
         <canvas id="canvas" width="800" height="800"></canvas>
+        <textarea id="logo-script"></textarea>
+        <button id="eval">Evaluate</button>
         <script src="turtle.js"></script>
+        <script src="logo.js"></script>
         <script>
             var tl = turtle(document.getElementById('canvas'));
             tl.clear();
             window.turtle = tl;
+            var logo = initLogo(tl);
+            var btn = document.getElementById('eval');
+            var txt = document.getElementById('logo-script');
+            btn.addEventListener('click', function(evt) {
+                logo.eval(txt.value);
+            });
         </script>
     </body>
 </html>
