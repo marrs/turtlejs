@@ -1,0 +1,19 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <style>
+        body {
+            background: #222;
+        }
+        </style>
+    </head>
+    <body>
+        <canvas id="canvas" width="800" height="800"></canvas>
+        <script src="turtle.js"></script>
+        <script>
+            var tl = turtle(document.getElementById('canvas'));
+            tl.clear();
+            window.turtle = tl;
+        </script>
+    </body>
+</html>
