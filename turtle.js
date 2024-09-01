@@ -196,7 +196,7 @@ window.turtle = function(canvas) {
         turtle.draw();
     }
 
-    return {
+    var turtle_power = {
         clear: function() {
             clear(ctx);
             turtle.draw();
@@ -207,5 +207,22 @@ window.turtle = function(canvas) {
         lt: left,
         right,
         rt: right,
-    }
+        perform: (script) => {
+            var msg = "";
+            if (script.length) {
+                for (var line of script) {
+                    var op = line[0];
+                    if (turtle_power[op]) {
+                        turtle_power[op].apply(turtle_power, line.slice(1));
+                    } else {
+                        msg = "Unknown operator: " + op;
+                        break;
+                    }
+                }
+            }
+            return msg;
+        }
+    };
+
+    return turtle_power;
 }
