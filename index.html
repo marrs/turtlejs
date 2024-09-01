@@ -5,12 +5,37 @@
         body {
             background: #222;
         }
+
+        .logo {
+            display: flex;
+        }
+
+        .cmd-history {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .cmd-history li {
+            color: white;
+        }
+
+        .logo-script {
+            background: #222;
+            color: white;
+        }
+
         </style>
     </head>
     <body>
-        <canvas id="canvas" width="800" height="800"></canvas>
-        <textarea id="logo-script"></textarea>
-        <button id="eval">Evaluate</button>
+        <div class="logo">
+            <canvas id="canvas" width="800" height="800"></canvas>
+            <div class="ui">
+                <ul id="cmd-history" class="cmd-history">
+                </ul>
+                <textarea id="logo-script" class="logo-script"></textarea>
+                <p id="logo-response"></p>
+            </div>
+        </div>
         <script src="turtle.js"></script>
         <script src="logo.js"></script>
         <script>
@@ -18,10 +43,28 @@
             tl.clear();
             window.turtle = tl;
             var logo = initLogo(tl);
-            var btn = document.getElementById('eval');
             var txt = document.getElementById('logo-script');
-            btn.addEventListener('click', function(evt) {
-                logo.eval(txt.value);
+            var elResponse = document.getElementById('logo-response');
+            var cmdHistory = document.getElementById('cmd-history');
+            txt.addEventListener('keydown', function(evt) {
+                switch (evt.key) {
+                    case 'Enter': {
+                        evt.preventDefault();
+                        elResponse.innerText = '';
+                        var expr = evt.target.value;
+                        if (expr) {
+                            var response = logo.eval(expr);
+                        }
+                        if (response) {
+                            elResponse.innerText = response;
+                        } else {
+                            var li = document.createElement('li');
+                            li.innerText = expr;
+                            cmdHistory.append(li);
+                            evt.target.value = '';
+                        }
+                    } break;
+                }
             });
         </script>
     </body>
