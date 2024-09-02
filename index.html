@@ -2,8 +2,11 @@
 <html>
     <head>
         <style>
-        body {
+        body ,
+        .logo-script ,
+        .logo-response {
             background: #222;
+            color: white;
         }
 
         .logo {
@@ -18,12 +21,6 @@
         .cmd-history li {
             color: white;
         }
-
-        .logo-script {
-            background: #222;
-            color: white;
-        }
-
         </style>
     </head>
     <body>
@@ -33,7 +30,7 @@
                 <ul id="cmd-history" class="cmd-history">
                 </ul>
                 <textarea id="logo-script" class="logo-script"></textarea>
-                <p id="logo-response"></p>
+                <p id="logo-response" class="logo-response"></p>
             </div>
         </div>
         <script src="turtle.js"></script>
