@@ -91,6 +91,7 @@ window.turtle = function(canvas) {
         color: 'white',
         canvas: turtle_canvas,
         context: turtle_canvas.getContext('2d'),
+        procedures: {},
     });
 
     var turtle = new Proxy(_turtle, {
@@ -140,60 +141,106 @@ window.turtle = function(canvas) {
         turtle.pos.y = y;
     }
 
-    function forward(distance) {
-        distance = +distance;
+    var ops = {
+        forward(distance) {
+            distance = +distance;
 
-        ctx.save();
-            ctx.strokeStyle = turtle.color;
-            ctx.beginPath();
+            ctx.save();
+                ctx.strokeStyle = turtle.color;
+                ctx.beginPath();
 
-            var {width, height} = canvas,
-                max_x = width / 2,
-                min_x = -max_x,
-                max_y = height / 2,
-                min_y = -max_y,
-                {x, y} = turtle.pos;
+                var {width, height} = canvas,
+                    max_x = width / 2,
+                    min_x = -max_x,
+                    max_y = height / 2,
+                    min_y = -max_y,
+                    {x, y} = turtle.pos;
 
-            while (distance > 0) {
-                ctx.moveTo(x, y);
+                while (distance > 0) {
+                    ctx.moveTo(x, y);
 
-                var {sin, cos} = turtle,
-                    new_x = x + sin * distance,
-                    new_y = y + cos * distance;
+                    var {sin, cos} = turtle,
+                        new_x = x + sin * distance,
+                        new_y = y + cos * distance;
 
-                switch (turtle.wrap) {
-                    case new_x > max_x: {
-                        distance -= line_to_x_boundary(max_x);
-                    } break;
-                    case new_x < min_x: {
-                        distance -= line_to_x_boundary(min_x);
-                    } break;
-                    case new_y > max_y: {
-                        distance -= line_to_y_boundary(max_y);
-                    } break;
-                    case new_y < min_y: {
-                        distance -= line_to_y_boundary(min_y);
-                    } break;
-                    default: {
-                        line_to(new_x, new_y);
-                        distance = 0;
+                    switch (turtle.wrap) {
+                        case new_x > max_x: {
+                            distance -= line_to_x_boundary(max_x);
+                        } break;
+                        case new_x < min_x: {
+                            distance -= line_to_x_boundary(min_x);
+                        } break;
+                        case new_y > max_y: {
+                            distance -= line_to_y_boundary(max_y);
+                        } break;
+                        case new_y < min_y: {
+                            distance -= line_to_y_boundary(min_y);
+                        } break;
+                        default: {
+                            line_to(new_x, new_y);
+                            distance = 0;
+                        }
                     }
-                }
 
-                turtle.penDown && ctx.stroke();
-                turtle.draw();
-            ctx.restore();
+                    turtle.penDown && ctx.stroke();
+                    turtle.draw();
+                ctx.restore();
+            }
+        },
+
+        right(deg) {
+            turtle.angle += rad(+deg || 0);
+            turtle.draw();
+        },
+
+        left(deg) {
+            turtle.angle -= rad(+deg || 0);
+            turtle.draw();
+        },
+
+        to(name, args, body) {
+            turtle.procedures[name] = {args, body};
+        },
+    };
+
+    ops.fd = ops.forward;
+    ops.rt = ops.right;
+    ops.lt = ops.left;
+
+    function _do(name, args = []) {
+        var proc = turtle.procedures[name];
+        if (!proc) {
+            return name + " is not defined.";
+        }
+        if (args.length) {
+            var _args = proc.args;
+            if (args.length !== _args.length) {
+                return "Error: " + _args.length + " arguments expected.";
+            }
+            var subs = {};
+            for (var idx = 0; idx < _args.length; ++idx) {
+                subs[_args[idx]] = args[idx];
+            }
+            // TODO: Walk body, replacing sub name with val.
+        } else {
+            return perform(proc.body);
         }
     }
 
-    function right(deg) {
-        turtle.angle += rad(+deg || 0);
-        turtle.draw();
-    }
-
-    function left(deg) {
-        turtle.angle -= rad(+deg || 0);
-        turtle.draw();
+    function perform(script) {
+        var msg = "";
+        if (script.length) {
+            for (var line of script) {
+                var op = line[0];
+                if (ops[op]) {
+                    ops[op].apply(ops, line.slice(1));
+                } else {
+                    msg = "Unknown operator: " + op;
+                    break;
+                }
+            }
+        }
+        return msg;
     }
 
     var turtle_power = {
@@ -201,27 +248,15 @@ window.turtle = function(canvas) {
             clear(ctx);
             turtle.draw();
         },
-        forward,
-        fd: forward,
-        left,
-        lt: left,
-        right,
-        rt: right,
-        perform: (script) => {
-            var msg = "";
-            if (script.length) {
-                for (var line of script) {
-                    var op = line[0];
-                    if (turtle_power[op]) {
-                        turtle_power[op].apply(turtle_power, line.slice(1));
-                    } else {
-                        msg = "Unknown operator: " + op;
-                        break;
-                    }
-                }
-            }
-            return msg;
-        }
+        forward: ops.forward,
+        fd: ops.forward,
+        left: ops.left,
+        lt: ops.left,
+        right: ops.right,
+        rt: ops.right,
+        to: ops.to,
+        do: _do,
+        perform,
     };
 
     return turtle_power;
