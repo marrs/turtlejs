@@ -234,6 +234,8 @@ window.turtle = function(canvas) {
                 var op = line[0];
                 if (ops[op]) {
                     ops[op].apply(ops, line.slice(1));
+                } else if (turtle.procedures[op]) {
+                    _do(op, line.slice(1));
                 } else {
                     msg = "Unknown operator: " + op;
                     break;
