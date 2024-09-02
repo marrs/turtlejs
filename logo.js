@@ -108,7 +108,7 @@ function parse(tokens) {
 function Logo(turtle) {
     return {
         parse(script) {
-            return parse(tokenise(script));
+            return parse(tokenise(script.toLowerCase()));
         },
         eval(script) {
             return turtle.perform(this.parse(script));

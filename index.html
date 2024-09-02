@@ -24,17 +24,22 @@
         </style>
     </head>
     <body>
+        <select id="loader">
+            <option></option>
+            <option value="1.1.1a">Square</option>
+        </select>
         <div class="logo">
             <canvas id="canvas" width="800" height="800"></canvas>
             <div class="ui">
                 <ul id="cmd-history" class="cmd-history">
                 </ul>
-                <textarea id="logo-script" class="logo-script"></textarea>
+                <textarea rows="20" id="logo-script" class="logo-script"></textarea>
                 <p id="logo-response" class="logo-response"></p>
             </div>
         </div>
         <script src="turtle.js"></script>
         <script src="logo.js"></script>
+        <script src="turtle-geometry.js"></script>
         <script>
             var tl = turtle(document.getElementById('canvas'));
             tl.clear();
@@ -83,6 +88,12 @@
                         }
                     } break;
                 }
+            });
+
+            var loader = document.getElementById('loader');
+            loader.addEventListener('change', function(evt) {
+                txt.value = tg[evt.target.value];
+                txt.focus();
             });
         </script>
     </body>
