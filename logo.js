@@ -1,12 +1,15 @@
 'use strict';
 
-function initLogo(turtle) {
+function Logo(turtle) {
     return {
         parse(script) {
             var ast = [];
             var indent = null;
             for (var line of script.split("\n")) {
-                ast.push(line.split(/\s/));
+                var tokens = line.split(/\s/);
+                if (tokens.join('')) {
+                    ast.push(tokens);
+                }
             }
             return ast;
         },

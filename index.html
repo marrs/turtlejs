@@ -39,26 +39,47 @@
             var tl = turtle(document.getElementById('canvas'));
             tl.clear();
             window.turtle = tl;
-            var logo = initLogo(tl);
+            var logo = Logo(tl);
             var txt = document.getElementById('logo-script');
             var elResponse = document.getElementById('logo-response');
             var cmdHistory = document.getElementById('cmd-history');
+            var isToing = false;
+
+            function eval_input(el) {
+                var expr = el.value;
+                var response = logo.eval(expr);
+                if (response) {
+                    elResponse.innerText = response;
+                } else {
+                    var li = document.createElement('li');
+                    li.innerText = expr;
+                    cmdHistory.append(li);
+                    el.value = '';
+                }
+            }
+
+            var indent_str = '  ';
+
             txt.addEventListener('keydown', function(evt) {
                 switch (evt.key) {
                     case 'Enter': {
-                        evt.preventDefault();
                         elResponse.innerText = '';
                         var expr = evt.target.value;
                         if (expr) {
-                            var response = logo.eval(expr);
-                        }
-                        if (response) {
-                            elResponse.innerText = response;
-                        } else {
-                            var li = document.createElement('li');
-                            li.innerText = expr;
-                            cmdHistory.append(li);
-                            evt.target.value = '';
+                            evt.preventDefault();
+                            if (isToing) {
+                                if (/\n[ \t]+$/.test(expr)) {
+                                    isToing = false;
+                                    eval_input(evt.target);
+                                } else {
+                                    evt.target.value += '\n' + indent_str;
+                                }
+                            } else if (/^to/.test(expr)) {
+                                isToing = true;
+                                evt.target.value += '\n' + indent_str;
+                            } else {
+                                eval_input(evt.target);
+                            }
                         }
                     } break;
                 }
