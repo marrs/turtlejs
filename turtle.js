@@ -223,6 +223,12 @@ window.turtle = function(canvas) {
             turtle.procedures[name] = {args, body};
         },
 
+        clear() {
+            clear(ctx);
+            turtle.angle = 0;
+            turtle.draw();
+        },
+
         repeat(count, body) {
             var fn = false;
             if (typeof body === 'function') {
@@ -265,10 +271,7 @@ window.turtle = function(canvas) {
     }
 
     var turtle_power = {
-        clear: function() {
-            clear(ctx);
-            turtle.draw();
-        },
+        clear: ops.clear,
         forward: ops.forward,
         fd: ops.forward,
         left: ops.left,
