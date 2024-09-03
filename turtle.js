@@ -117,25 +117,25 @@ window.turtle = function(canvas) {
     init_context(ctx);
     init_context(turtle.context);
 
-    function line_to_x_boundary(x_boundary_pos) {
+    function draw_line_to_x_boundary(x_boundary_pos) {
         var {x, y} = turtle.pos;
         var {sin, cos} = turtle;
         var mag = abs((x_boundary_pos - x) / sin);
         var new_y= cos * mag + y;
-        line_to(x_boundary_pos, new_y);
+        draw_line_to(x_boundary_pos, new_y);
         return mag;
     }
 
-    function line_to_y_boundary(y_boundary_pos) {
+    function draw_line_to_y_boundary(y_boundary_pos) {
         var {x, y} = turtle.pos;
         var {sin, cos} = turtle;
         var mag = Math.abs((y_boundary_pos - y) / cos);
         const new_x = sin * mag + x;
-        line_to(new_x, y_boundary_pos);
+        draw_line_to(new_x, y_boundary_pos);
         return mag;
     }
 
-    function line_to(x, y) {
+    function draw_line_to(x, y) {
         ctx.lineTo(x, y);
         turtle.pos.x = x;
         turtle.pos.y = y;
@@ -186,19 +186,19 @@ window.turtle = function(canvas) {
 
                     switch (turtle.wrap) {
                         case new_x > max_x: {
-                            distance -= line_to_x_boundary(max_x);
+                            distance -= draw_line_to_x_boundary(max_x);
                         } break;
                         case new_x < min_x: {
-                            distance -= line_to_x_boundary(min_x);
+                            distance -= draw_line_to_x_boundary(min_x);
                         } break;
                         case new_y > max_y: {
-                            distance -= line_to_y_boundary(max_y);
+                            distance -= draw_line_to_y_boundary(max_y);
                         } break;
                         case new_y < min_y: {
-                            distance -= line_to_y_boundary(min_y);
+                            distance -= draw_line_to_y_boundary(min_y);
                         } break;
                         default: {
-                            line_to(new_x, new_y);
+                            draw_line_to(new_x, new_y);
                             distance = 0;
                         }
                     }
