@@ -250,6 +250,18 @@ window.turtle = function(canvas) {
     ops.rt = ops.right;
     ops.lt = ops.left;
 
+    function walk(arr, fn) {
+        var new_arr = [];
+        for (var idx = 0, len = arr.length; idx < len; ++idx) {
+            if (Array.isArray(arr[idx])) {
+                new_arr[idx] = walk(arr[idx], fn);
+            } else {
+                new_arr[idx] = fn(arr[idx]) || arr[idx];
+            }
+        }
+        return new_arr;
+    }
+
     function _do(name, args = []) {
         var proc = turtle.procedures[name];
         if (!proc) {
@@ -260,11 +272,14 @@ window.turtle = function(canvas) {
             if (args.length !== _args.length) {
                 return "Error: " + _args.length + " arguments expected.";
             }
-            var subs = {};
-            for (var idx = 0; idx < _args.length; ++idx) {
-                subs[_args[idx]] = args[idx];
-            }
-            // TODO: Walk body, replacing sub name with val.
+            perform(
+                walk(proc.body, (el) => {
+                    var idx = _args.indexOf(el);
+                    if (idx > -1) {
+                        return args[idx];
+                    }
+                })
+            );
         } else {
             return perform(proc.body);
         }
