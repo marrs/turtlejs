@@ -1,14 +1,5 @@
 'use strict';
 
-if (!Array.prototype.last) {
-    Array.prototype.last = function() {
-        return this[this.length -1];
-    }
-} else {
-    console.warn("Array.prototype.last already defined");
-}
-
-
 function leading_ws(str) {
     var chars = {
         space: '',
@@ -46,28 +37,13 @@ function tokenise(script) {
     return tokens;
 }
 
-function Stack () {
-    return this;
-}
-
-Stack.prototype = Object.create(Array.prototype);
-Object.assign(Stack.prototype, {
-    backtrace: function(op) {
-        return this.reduce((acc, el) => {
-            return acc || el.op === op;
-        }, false);
-    },
-    last: function() {
-        if (this.length) {
-            return this[this.length - 1];
-        }
-        return;
-    }
-})
-
 function parse(tokens) {
-    var ast = [];
     var stack = new Stack();
+    stack.push({
+        op: null,
+        indent: '',
+        body: [],
+    });
 
     for (var line of tokens) {
         var indent = line[0];
@@ -81,28 +57,49 @@ function parse(tokens) {
                 if (!name) {
                     throw new Error("Parser error: Procedure definition - no name given.");
                 }
-                ast.push([op, name, line.slice(3), []]);
+                const body = [];
+                stack.last().body.push([op, name, line.slice(3), body]);
                 stack.push({
                     op: 'to',
                     indent,
-                    indent_level: 0,
+                    body,
+                });
+            } break;
+            case 'repeat': {
+                const count = +line[2];
+                if (Number.isNaN(count)) {
+                    throw new Error("Parser error: Repeat expects a number as its first argument.");
+                }
+                const body = [];
+                stack.last().body.push([op, count, body]);
+                stack.push({
+                    op: 'repeat',
+                    indent,
+                    body,
                 });
             } break;
             default: {
-                if (stack.length) {
+                if (stack.length > 1) {
                     if (stack.last().indent.length < indent.length) {
-                        ast.last().last().push(line.slice(1));
+                        stack.last().body.push(line.slice(1));
                     } else {
-                        stack.pop();
-                        ast.push(line.slice(1));
+                        const prev_frame = stack.pop();
+                        const cur_frame = stack.last();
+                        if (stack.length) {
+                            cur_frame.body.push(prev_frame.body);
+                            cur_frame.body.push(line.slice(1));
+                        } else {
+                            prev_frame && cur_frame.body.push(prev_frame.body);
+                            cur_frame.body.push(line.slice(1));
+                        }
                     }
                 } else {
-                    ast.push(line.slice(1));
+                    stack.last().body.push(line.slice(1));
                 }
             }
         }
     }
-    return ast;
+    return stack[0].body;
 }
 
 function Logo(turtle) {

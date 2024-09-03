@@ -43,6 +43,7 @@
                 <p id="logo-response" class="logo-response"></p>
             </div>
         </div>
+        <script src="common.js"></script>
         <script src="turtle.js"></script>
         <script src="logo.js"></script>
         <script src="turtle-geometry.js"></script>
@@ -54,6 +55,7 @@
             var txt = document.getElementById('logo-script');
             var elResponse = document.getElementById('logo-response');
             var cmdHistory = document.getElementById('cmd-history');
+            var stack = new Stack();
             var isToing = false;
 
             function eval_input(el) {
@@ -69,27 +71,56 @@
                 }
             }
 
-            var indent_str = '  ';
+            const indent_str = '  ';
+
+            function get_indent() {
+                return stack.reduce((acc, x) => {
+                    return acc += x.indent_str;
+                }, '');
+            }
+
+            function new_line(el) {
+                el.value += '\n' + get_indent();
+            }
+
+            function indent_cursor(op, el) {
+                stack.push({
+                    op: 'to',
+                    indent_str,
+                });
+                new_line(el);
+            }
+
+            function unindent_cursor(el) {
+                const frame = stack.pop();
+                if (frame) {
+                    el.value = el.value.slice(0, -frame.indent_str.length);
+                    return true;
+                }
+                return false;
+            }
 
             txt.addEventListener('keydown', function(evt) {
+                var target = evt.target;
                 switch (evt.key) {
                     case 'Enter': {
                         elResponse.innerText = '';
-                        var expr = evt.target.value;
+                        var expr = target.value;
                         if (expr) {
+                            var last_line = expr.split('\n').pop();
                             evt.preventDefault();
-                            if (isToing) {
-                                if (/\n[ \t]+$/.test(expr)) {
-                                    isToing = false;
-                                    eval_input(evt.target);
-                                } else {
-                                    evt.target.value += '\n' + indent_str;
+                            if (/^\s+$/.test(last_line)) {
+                                if (!unindent_cursor(target)) {
+                                    eval_input(target);
                                 }
-                            } else if (/^to/.test(expr)) {
-                                isToing = true;
-                                evt.target.value += '\n' + indent_str;
+                            } else if (/^to/.test(last_line)) {
+                                indent_cursor('to', target);
+                            } else if (/^\s*repeat/.test(last_line)) {
+                                indent_cursor('repeat', target);
+                            } else if (/\w/.test(last_line)) {
+                                new_line(target);
                             } else {
-                                eval_input(evt.target);
+                                eval_input(target);
                             }
                         }
                     } break;
