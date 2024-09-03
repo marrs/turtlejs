@@ -141,6 +141,27 @@ window.turtle = function(canvas) {
         turtle.pos.y = y;
     }
 
+    function perform(script) {
+        var msg = "";
+        if (script.length) {
+            for (var line of script) {
+                if (!Array.isArray(line)) {
+                    throw new Error("Array expected");
+                }
+                var op = line[0];
+                if (ops[op]) {
+                    ops[op].apply(ops, line.slice(1));
+                } else if (turtle.procedures[op]) {
+                    _do(op, line.slice(1));
+                } else {
+                    msg = "Unknown operator: " + op;
+                    break;
+                }
+            }
+        }
+        return msg;
+    }
+
     var ops = {
         forward(distance) {
             distance = +distance;
@@ -201,6 +222,22 @@ window.turtle = function(canvas) {
         to(name, args, body) {
             turtle.procedures[name] = {args, body};
         },
+
+        repeat(count, body) {
+            var fn = false;
+            if (typeof body === 'function') {
+                fn = true;
+            } else if (!Array.isArray(body)) {
+                throw new Error("Repeat expects a function or an array for its body.");
+            }
+
+            for (var x = 0; x < count; ++x) {
+                var msg = fn? body() : perform(body);
+                if (msg) {
+                    return msg;
+                }
+            }
+        }
     };
 
     ops.fd = ops.forward;
@@ -227,24 +264,6 @@ window.turtle = function(canvas) {
         }
     }
 
-    function perform(script) {
-        var msg = "";
-        if (script.length) {
-            for (var line of script) {
-                var op = line[0];
-                if (ops[op]) {
-                    ops[op].apply(ops, line.slice(1));
-                } else if (turtle.procedures[op]) {
-                    _do(op, line.slice(1));
-                } else {
-                    msg = "Unknown operator: " + op;
-                    break;
-                }
-            }
-        }
-        return msg;
-    }
-
     var turtle_power = {
         clear: function() {
             clear(ctx);
@@ -259,6 +278,7 @@ window.turtle = function(canvas) {
         to: ops.to,
         do: _do,
         perform,
+        repeat: ops.repeat,
     };
 
     return turtle_power;
