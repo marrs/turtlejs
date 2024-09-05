@@ -28,13 +28,6 @@ function deg(rad) {
 
 
 window.turtle = function(canvas) {
-    var turtle_canvas = document.createElement('canvas');
-    turtle_canvas.width = canvas.width;
-    turtle_canvas.height = canvas.height;
-    turtle_canvas.style.left = canvas.offsetLeft + "px";
-    turtle_canvas.style.top = canvas.offsetTop + "px";
-    turtle_canvas.style.position = "absolute";
-    canvas.after(turtle_canvas);
     var ctx = canvas.getContext('2d');
 
     var turtle_shapes = Object.freeze({
@@ -48,17 +41,35 @@ window.turtle = function(canvas) {
         triangle: [[-5, 0], [5, 0], [0, 15]],
     });
 
+    var snapshot;
+
+    function take_snapshot(ctx) {
+        ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            snapshot = ctx.getImageData(0, 0, ctx.canvas.width, ctx.canvas.height);
+        ctx.restore();
+    }
+
+    function paint_snapshot(ctx) {
+        const {width, height} = ctx.canvas;
+        ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.putImageData(snapshot, 0, 0);
+        ctx.restore();
+    }
+
+    take_snapshot(ctx);
+
     var turtle_traits = {
         draw() {
             if (turtle.visible) {
-                var {context: ctx, angle} = this;
+                var {angle} = this;
                 var {x, y} = this.pos;
 
                 ctx.save();
                     ctx.translate(x, y);
                     ctx.rotate(-angle);
                     ctx.translate(-x, -y);
-                    clear(ctx);
                     ctx.beginPath();
                     var { shape, pos } = this;
                     if (shape.length > 0)
@@ -89,8 +100,7 @@ window.turtle = function(canvas) {
         wrap: true,
         shape: turtle_shapes.triangle,
         color: 'white',
-        canvas: turtle_canvas,
-        context: turtle_canvas.getContext('2d'),
+        canvas: canvas,
         procedures: {},
     });
 
@@ -115,7 +125,6 @@ window.turtle = function(canvas) {
     });
 
     init_context(ctx);
-    init_context(turtle.context);
 
     function draw_line_to_x_boundary(x_boundary_pos) {
         var {x, y} = turtle.pos;
@@ -136,7 +145,14 @@ window.turtle = function(canvas) {
     }
 
     function draw_line_to(x, y) {
-        ctx.lineTo(x, y);
+        ctx.save();
+            ctx.strokeStyle = turtle.color;
+            ctx.beginPath();
+            ctx.moveTo(turtle.pos.x, turtle.pos.y);
+            ctx.lineTo(x, y);
+            ctx.closePath();
+            ctx.stroke();
+        ctx.restore();
         turtle.pos.x = x;
         turtle.pos.y = y;
     }
@@ -164,6 +180,7 @@ window.turtle = function(canvas) {
 
     var ops = {
         forward(distance) {
+            clear(ctx);
             distance = +distance;
 
             ctx.save();
@@ -203,18 +220,24 @@ window.turtle = function(canvas) {
                         }
                     }
 
+                    paint_snapshot(ctx);
                     turtle.penDown && ctx.stroke();
+                    take_snapshot(ctx);
                     turtle.draw();
                 ctx.restore();
             }
         },
 
         right(deg) {
+            clear(ctx);
+            paint_snapshot(ctx);
             turtle.angle += rad(+deg || 0);
             turtle.draw();
         },
 
         left(deg) {
+            clear(ctx);
+            paint_snapshot(ctx);
             turtle.angle -= rad(+deg || 0);
             turtle.draw();
         },
