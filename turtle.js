@@ -98,6 +98,7 @@ window.turtle = function(canvas) {
         width: 1,
         visible: true,
         wrap: true,
+        is_animated: true,
         shape: turtle_shapes.triangle,
         color: 'white',
         canvas: canvas,
@@ -157,22 +158,37 @@ window.turtle = function(canvas) {
         turtle.pos.y = y;
     }
 
+    function run_line(line) {
+        if (!Array.isArray(line)) {
+            throw new Error("Array expected");
+        }
+        var op = line[0];
+        if (ops[op]) {
+            ops[op].apply(ops, line.slice(1));
+        } else if (turtle.procedures[op]) {
+            run_procedure(op, line.slice(1));
+        } else {
+            return "Unknown operator: " + op;
+        }
+    }
+
+    function animate(lines) {
+        var line = lines.next();
+        if (!line.done) {
+            run_line(line.value);
+        }
+        setTimeout(() => animate(lines), 40);
+    }
+
     function perform(script) {
         var msg = "";
         if (script.length) {
+            if (turtle.is_animated) {
+                return animate(script.values());
+            }
             for (var line of script) {
-                if (!Array.isArray(line)) {
-                    throw new Error("Array expected");
-                }
-                var op = line[0];
-                if (ops[op]) {
-                    ops[op].apply(ops, line.slice(1));
-                } else if (turtle.procedures[op]) {
-                    _do(op, line.slice(1));
-                } else {
-                    msg = "Unknown operator: " + op;
-                    break;
-                }
+                msg = run_line(line);
+                if (msg) { break; }
             }
         }
         return msg;
@@ -261,7 +277,13 @@ window.turtle = function(canvas) {
             }
 
             for (var x = 0; x < count; ++x) {
-                var msg = fn? body() : perform(body);
+                if (fn) {
+                    body();
+                } else {
+                    for (var line of body) {
+                        var msg = run_line(line);
+                    }
+                }
                 if (msg) {
                     return msg;
                 }
@@ -285,7 +307,7 @@ window.turtle = function(canvas) {
         return new_arr;
     }
 
-    function _do(name, args = []) {
+    function run_procedure(name, args = []) {
         var proc = turtle.procedures[name];
         if (!proc) {
             return name + " is not defined.";
@@ -317,7 +339,7 @@ window.turtle = function(canvas) {
         right: ops.right,
         rt: ops.right,
         to: ops.to,
-        do: _do,
+        do: run_procedure,
         perform,
         repeat: ops.repeat,
     };
