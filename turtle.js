@@ -1,5 +1,26 @@
 "use strict"
 
+// User errors are returned; system errors are thrown.
+//
+// Animation is achieved by putting a pause of `animation_rate`
+// milliseconds between drawing operations.  However, if wished,
+// animation of individual drawing operations can be achieved by
+// subdividing directional commands into a series of smaller
+// vector operations.
+//
+// E.g. `forward 100` may be converted into:
+// ```
+// repeat 10
+//   forward 10.
+// ```
+//
+// To achieve this, we load all commands into a command buffer,
+// altering them as required.  From the command buffer, operations
+// are loaded into the command stack for execution.
+//
+// There is nothing to stop the command stack from being run
+// in a web worker.
+
 function centre_context(ctx) {
     var {width, height} = ctx.canvas;
     ctx.translate(width / 2, height / 2);
@@ -28,6 +49,7 @@ function deg(rad) {
 
 
 window.turtle = function(canvas) {
+    var animation_rate = 40;
     var ctx = canvas.getContext('2d');
 
     var turtle_shapes = Object.freeze({
@@ -83,6 +105,9 @@ window.turtle = function(canvas) {
                     ctx.fill();
                 ctx.restore();
             }
+        },
+        stop() {
+            this.is_running = false;
         }
     };
 
@@ -99,6 +124,7 @@ window.turtle = function(canvas) {
         visible: true,
         wrap: true,
         is_animated: true,
+        is_running: false,
         shape: turtle_shapes.triangle,
         color: 'white',
         canvas: canvas,
@@ -177,21 +203,130 @@ window.turtle = function(canvas) {
         if (!line.done) {
             run_line(line.value);
         }
-        setTimeout(() => animate(lines), 40);
+        setTimeout(() => animate(lines), animation_rate);
     }
 
-    function perform(script) {
-        var msg = "";
-        if (script.length) {
-            if (turtle.is_animated) {
-                return animate(script.values());
-            }
-            for (var line of script) {
-                msg = run_line(line);
-                if (msg) { break; }
+    var cmd_buffer = (function() {
+        // TODO: Buffer is currently infinite.  This should
+        // either be a ring buffer or it should be emptied
+        // once in a while.
+        var buffer = []
+          , pc = 0 // Programme counter.
+          , eop = 0 // End of programme.
+        return {
+            append(cmd) {
+                buffer[eop++] = cmd;
+            },
+            next() {
+                if (pc < eop) {
+                    return {
+                        value: buffer[pc++],
+                        done: false,
+                    };
+                } else {
+                    return {
+                        value: null,
+                        done: true,
+                    }
+                }
+            },
+        };
+    }());
+
+    var cmd_runner = (function(turtle) {
+        var stack = []
+
+        function push_stack_frame(line) {
+            var line = line.slice();
+            if (line.length > 2) {
+                var body = line.pop();
+                stack.push({
+                    line,
+                    acc: 0,
+                    body,
+                });
+            } else {
+                stack.push({
+                    line,
+                    acc: null,
+                    body: null,
+                });
             }
         }
-        return msg;
+
+        function load_body(body) {
+            body.toReversed().forEach(line => {
+                push_stack_frame(line);
+            });
+        }
+
+        function load_command(cmd, done) {
+            var line = cmd.line;
+            var procedure = turtle.procedures[line[0]];
+            switch(true) {
+                case 'repeat' === line[0]: {
+                    if (cmd.acc++ < line[1]) {
+                        load_body(cmd.body);
+                        run(done);
+                    } else {
+                        stack.pop();
+                        run(done);
+                    }
+                } break;
+                case procedure != null: {
+                    stack.pop();
+                    const body = prepare_procedure(procedure, line.slice(1));
+                    body && body.length && load_body(body);
+                    run(done);
+                } break;
+                default: {
+                    ops[line[0]](line[1]);  // Run command
+                    stack.pop();
+                    setTimeout(() => {
+                        run(done);
+                    }, animation_rate)
+                }
+            }
+        }
+
+        function run(done) {
+            if (!turtle.is_running) {
+                return done();
+            }
+            if (stack.length) {
+                var line = stack.last();
+                load_command(line, done);
+            } else {
+                var cmd = cmd_buffer.next();
+                var line = cmd.value;
+                if (!cmd.done) {
+                    push_stack_frame(line, done);
+                    run(done);
+                } else {
+                    turtle.is_running = false;
+                    done();
+                }
+            }
+        }
+
+        return {
+            cue(list, done) {
+                for (var cmd of list) {
+                    if ('to' === cmd[0]) {
+                        ops.to(cmd[1], cmd[2], cmd[3]);
+                    } else {
+                        // TODO: Animate dir commands if req.
+                        cmd_buffer.append(cmd);
+                    }
+                }
+                turtle.is_running = true;
+                run(done);
+            },
+        }
+    }(turtle));
+
+    function perform(script, done = function() {}) {
+        cmd_runner.cue(script, done);
     }
 
     var ops = {
@@ -307,6 +442,23 @@ window.turtle = function(canvas) {
         return new_arr;
     }
 
+    function prepare_procedure(proc, args = []) {
+        if (args.length) {
+            var placeholders = proc.args;
+            if (args.length !== placeholders.length) {
+                return "Error: " + placeholders.length + " arguments expected.";
+            }
+            return walk(proc.body, (el) => {
+                var idx = placeholders.indexOf(el);
+                if (idx > -1) {
+                    return args[idx];
+                }
+            })
+        } else {
+            return proc.body;
+        }
+    }
+
     function run_procedure(name, args = []) {
         var proc = turtle.procedures[name];
         if (!proc) {
@@ -342,6 +494,7 @@ window.turtle = function(canvas) {
         do: run_procedure,
         perform,
         repeat: ops.repeat,
+        stop: turtle.stop.bind(turtle),
     };
 
     return turtle_power;

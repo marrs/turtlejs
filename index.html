@@ -41,6 +41,7 @@
                 </ul>
                 <textarea rows="20" id="logo-script" class="logo-script"></textarea>
                 <p id="logo-response" class="logo-response"></p>
+                <button id="stop">Stop</button>
             </div>
         </div>
         <script src="common.js"></script>
@@ -131,6 +132,11 @@
             loader.addEventListener('change', function(evt) {
                 txt.value = tg[evt.target.value];
                 txt.focus();
+            });
+
+            var stop = document.getElementById('stop');
+            stop.addEventListener('click', function(evt) {
+                tl.stop();
             });
         </script>
     </body>
