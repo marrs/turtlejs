@@ -431,10 +431,7 @@ window.turtle = function(canvas) {
         },
 
         left(deg) {
-            clear(ctx);
-            paint_snapshot(ctx);
-            turtle.angle -= rad(+deg || 0);
-            turtle.draw();
+            ops.right(-deg);
         },
 
         to(name, args, body) {
