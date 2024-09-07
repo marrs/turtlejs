@@ -163,10 +163,7 @@ window.turtle = function(canvas) {
     };
 
     var _turtle = Object.assign(Object.create(turtle_traits), {
-        pos: {
-            x: 0,
-            y: 0
-        },
+        pos: { x: 0, y: 0 },
         angle: 0,
         sin: Math.sin(0),
         cos: Math.cos(0),
