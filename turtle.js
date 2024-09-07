@@ -84,7 +84,7 @@ window.turtle = function(canvas) {
 
     var turtle_traits = {
         draw() {
-            if (turtle.visible) {
+            if (this.is_visible) {
                 var {angle} = this;
                 var {x, y} = this.pos;
 
@@ -101,7 +101,7 @@ window.turtle = function(canvas) {
                     }
                     ctx.closePath();
 
-                    ctx.fillStyle = 'green';
+                    ctx.fillStyle = this.color;
                     ctx.fill();
                 ctx.restore();
             }
@@ -121,12 +121,13 @@ window.turtle = function(canvas) {
         cos: Math.cos(0),
         penDown: true,
         width: 1,
-        visible: true,
+        is_visible: true,
         wrap: true,
         is_animated: true,
         is_running: false,
         shape: turtle_shapes.triangle,
-        color: 'white',
+        trail_color: 'white',
+        color: 'green',
         canvas: canvas,
         procedures: {},
     });
@@ -173,7 +174,7 @@ window.turtle = function(canvas) {
 
     function draw_line_to(x, y) {
         ctx.save();
-            ctx.strokeStyle = turtle.color;
+            ctx.strokeStyle = turtle.trail_color;
             ctx.beginPath();
             ctx.moveTo(turtle.pos.x, turtle.pos.y);
             ctx.lineTo(x, y);
@@ -196,14 +197,6 @@ window.turtle = function(canvas) {
         } else {
             return "Unknown operator: " + op;
         }
-    }
-
-    function animate(lines) {
-        var line = lines.next();
-        if (!line.done) {
-            run_line(line.value);
-        }
-        setTimeout(() => animate(lines), animation_rate);
     }
 
     var cmd_buffer = (function() {
@@ -237,6 +230,7 @@ window.turtle = function(canvas) {
         var stack = []
 
         function push_stack_frame(line) {
+            console.log('line', line);
             var line = line.slice();
             if (line.length > 2) {
                 var body = line.pop();
@@ -310,7 +304,7 @@ window.turtle = function(canvas) {
         }
 
         return {
-            cue(list, done) {
+            cue(list, done = function() {}) {
                 for (var cmd of list) {
                     if ('to' === cmd[0]) {
                         ops.to(cmd[1], cmd[2], cmd[3]);
@@ -335,7 +329,7 @@ window.turtle = function(canvas) {
             distance = +distance;
 
             ctx.save();
-                ctx.strokeStyle = turtle.color;
+                ctx.strokeStyle = turtle.trail_color;
                 ctx.beginPath();
 
                 var {width, height} = canvas,
@@ -399,10 +393,12 @@ window.turtle = function(canvas) {
 
         clear() {
             clear(ctx);
+            take_snapshot(ctx);
             turtle.angle = 0;
             turtle.draw();
         },
 
+        // TODO: Cue commands
         repeat(count, body) {
             var fn = false;
             if (typeof body === 'function') {
@@ -484,18 +480,28 @@ window.turtle = function(canvas) {
 
     var turtle_power = {
         clear: ops.clear,
-        forward: ops.forward,
-        fd: ops.forward,
-        left: ops.left,
-        lt: ops.left,
-        right: ops.right,
-        rt: ops.right,
+        forward: function(distance) {
+            cmd_runner.cue([['forward', distance]]);
+            return this;
+        },
+        left: function(angle) {
+            cmd_runner.cue([['left', angle]]);
+            return this;
+        },
+        right: function(angle) {
+            cmd_runner.cue([['right', angle]]);
+            return this;
+        },
         to: ops.to,
         do: run_procedure,
         perform,
         repeat: ops.repeat,
         stop: turtle.stop.bind(turtle),
     };
+
+    turtle_power.fd = turtle_power.forward.bind(turtle_power);
+    turtle_power.rt = turtle_power.right.bind(turtle_power);
+    turtle_power.lt = turtle_power.left.bind(turtle_power);
 
     return turtle_power;
 }
