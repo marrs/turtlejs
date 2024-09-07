@@ -326,9 +326,13 @@ window.turtle = function(canvas) {
                 default: {
                     ops[line[0]](line[1]);  // Run command
                     stack.pop();
-                    setTimeout(() => {
+                    if (turtle.is_animated) {
+                        setTimeout(() => {
+                            run(done);
+                        }, animation_rate)
+                    } else {
                         run(done);
-                    }, animation_rate)
+                    }
                 }
             }
         }
