@@ -21,6 +21,10 @@
 // There is nothing to stop the command stack from being run
 // in a web worker.
 
+function array_last(arr) {
+    return arr[arr.length -1];
+}
+
 function walk(arr, fn) {
     var new_arr = [];
     for (var idx = 0, len = arr.length; idx < len; ++idx) {
@@ -339,7 +343,7 @@ window.turtle = function(canvas) {
                 return done();
             }
             if (stack.length) {
-                var line = stack.last();
+                var line = array_last(stack);
                 load_command(line, done);
             } else {
                 var cmd = cmd_buffer.next();
