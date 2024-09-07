@@ -21,6 +21,18 @@
 // There is nothing to stop the command stack from being run
 // in a web worker.
 
+function walk(arr, fn) {
+    var new_arr = [];
+    for (var idx = 0, len = arr.length; idx < len; ++idx) {
+        if (Array.isArray(arr[idx])) {
+            new_arr[idx] = walk(arr[idx], fn);
+        } else {
+            new_arr[idx] = fn(arr[idx]) || arr[idx];
+        }
+    }
+    return new_arr;
+}
+
 function centre_context(ctx) {
     var {width, height} = ctx.canvas;
     ctx.translate(width / 2, height / 2);
@@ -47,6 +59,45 @@ function deg(rad) {
     return rad * 180 / Math.PI;
 }
 
+function prepare_procedure(proc, args = []) {
+    if (args.length) {
+        var placeholders = proc.args;
+        if (args.length !== placeholders.length) {
+            return "Error: " + placeholders.length + " arguments expected.";
+        }
+        return walk(proc.body, (el) => {
+            var idx = placeholders.indexOf(el);
+            if (idx > -1) {
+                return args[idx];
+            }
+        })
+    } else {
+        return proc.body;
+    }
+}
+
+function run_procedure(name, args = []) {
+    var proc = turtle.procedures[name];
+    if (!proc) {
+        return name + " is not defined.";
+    }
+    if (args.length) {
+        var _args = proc.args;
+        if (args.length !== _args.length) {
+            return "Error: " + _args.length + " arguments expected.";
+        }
+        perform(
+            walk(proc.body, (el) => {
+                var idx = _args.indexOf(el);
+                if (idx > -1) {
+                    return args[idx];
+                }
+            })
+        );
+    } else {
+        return perform(proc.body);
+    }
+}
 
 window.turtle = function(canvas) {
     var animation_rate = 40;
@@ -230,7 +281,6 @@ window.turtle = function(canvas) {
         var stack = []
 
         function push_stack_frame(line) {
-            console.log('line', line);
             var line = line.slice();
             if (line.length > 2) {
                 var body = line.pop();
@@ -425,58 +475,6 @@ window.turtle = function(canvas) {
     ops.fd = ops.forward;
     ops.rt = ops.right;
     ops.lt = ops.left;
-
-    function walk(arr, fn) {
-        var new_arr = [];
-        for (var idx = 0, len = arr.length; idx < len; ++idx) {
-            if (Array.isArray(arr[idx])) {
-                new_arr[idx] = walk(arr[idx], fn);
-            } else {
-                new_arr[idx] = fn(arr[idx]) || arr[idx];
-            }
-        }
-        return new_arr;
-    }
-
-    function prepare_procedure(proc, args = []) {
-        if (args.length) {
-            var placeholders = proc.args;
-            if (args.length !== placeholders.length) {
-                return "Error: " + placeholders.length + " arguments expected.";
-            }
-            return walk(proc.body, (el) => {
-                var idx = placeholders.indexOf(el);
-                if (idx > -1) {
-                    return args[idx];
-                }
-            })
-        } else {
-            return proc.body;
-        }
-    }
-
-    function run_procedure(name, args = []) {
-        var proc = turtle.procedures[name];
-        if (!proc) {
-            return name + " is not defined.";
-        }
-        if (args.length) {
-            var _args = proc.args;
-            if (args.length !== _args.length) {
-                return "Error: " + _args.length + " arguments expected.";
-            }
-            perform(
-                walk(proc.body, (el) => {
-                    var idx = _args.indexOf(el);
-                    if (idx > -1) {
-                        return args[idx];
-                    }
-                })
-            );
-        } else {
-            return perform(proc.body);
-        }
-    }
 
     var turtle_power = {
         clear: ops.clear,
