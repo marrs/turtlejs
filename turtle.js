@@ -449,29 +449,6 @@ window.turtle = function(canvas) {
             turtle.angle = 0;
             turtle.draw();
         },
-
-        // TODO: Cue commands
-        repeat(count, body) {
-            var fn = false;
-            if (typeof body === 'function') {
-                fn = true;
-            } else if (!Array.isArray(body)) {
-                throw new Error("Repeat expects a function or an array for its body.");
-            }
-
-            for (var x = 0; x < count; ++x) {
-                if (fn) {
-                    body();
-                } else {
-                    for (var line of body) {
-                        var msg = run_line(line);
-                    }
-                }
-                if (msg) {
-                    return msg;
-                }
-            }
-        }
     };
 
     ops.fd = ops.forward;
@@ -495,7 +472,20 @@ window.turtle = function(canvas) {
         to: ops.to,
         do: run_procedure,
         perform,
-        repeat: ops.repeat,
+        repeat: function(count, body) {
+            var fn = false;
+            if (typeof body === 'function') {
+                for (var x = 0; x < count; ++x) {
+                    body();
+                }
+                return this;
+            } else if (!Array.isArray(body)) {
+                throw new Error("Repeat expects a function or an array for its body.");
+            }
+
+            cmd_runner.cue([['repeat', count, body]]);
+            return this;
+        },
         stop: turtle.stop.bind(turtle),
     };
 
