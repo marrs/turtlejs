@@ -201,3 +201,11 @@ turtle.perform([
   ['square', 90]
 ])
 ```
+
+### Known issues
+
+#### Memory leak
+
+Turtle performs its operations by first putting them on a queue and then
+running them asynchronously.  At the time of writing, this queue does not
+get cleaned up after the operations are run and will simply grow with use.
