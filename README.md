@@ -143,7 +143,7 @@ This is done by passing an array of instructions to `turtle.perform`.
 For directional operations (and other primitives), this is of
 the form `[$op $arg]`; e.g. `['forward', 100]` or `['right', 90]`.
 > [!NOTE]
-> `['right', '90']` will also work.  String will be converted
+> `['right', '90']` will also work.  Strings will be converted
 > to the correct type by the engine.
 
 Repeat is performed using `['repeat', $count, $body]`, where
@@ -206,6 +206,6 @@ turtle.perform([
 
 #### Memory leak
 
-Turtle performs its operations by first putting them on a queue and then
+TurtleJS performs its operations by first putting them on a queue and then
 running them asynchronously.  At the time of writing, this queue does not
 get cleaned up after the operations are run and will simply grow with use.
