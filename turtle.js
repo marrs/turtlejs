@@ -428,6 +428,12 @@ window.Turtle = function(canvas) {
             }
         },
 
+        back(distance) {
+            ops.right(180);
+            ops.forward(distance);
+            ops.right(180);
+        },
+
         right(deg) {
             clear(ctx);
             paint_snapshot(ctx);
@@ -461,6 +467,10 @@ window.Turtle = function(canvas) {
             cmd_runner.cue([['forward', distance]]);
             return this;
         },
+        back: function(distance) {
+            cmd_runner.cue([['back', distance]]);
+            return this;
+        },
         left: function(angle) {
             cmd_runner.cue([['left', angle]]);
             return this;
@@ -492,6 +502,8 @@ window.Turtle = function(canvas) {
     turtle_power.fd = turtle_power.forward.bind(turtle_power);
     turtle_power.rt = turtle_power.right.bind(turtle_power);
     turtle_power.lt = turtle_power.left.bind(turtle_power);
+    turtle_power.backward = turtle_power.back.bind(turtle_power);
+    turtle_power.bk = turtle_power.back.bind(turtle_power);
 
     return turtle_power;
 }
