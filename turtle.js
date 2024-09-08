@@ -80,29 +80,6 @@ function prepare_procedure(proc, args = []) {
     }
 }
 
-function run_procedure(name, args = []) {
-    var proc = turtle.procedures[name];
-    if (!proc) {
-        return name + " is not defined.";
-    }
-    if (args.length) {
-        var _args = proc.args;
-        if (args.length !== _args.length) {
-            return "Error: " + _args.length + " arguments expected.";
-        }
-        perform(
-            walk(proc.body, (el) => {
-                var idx = _args.indexOf(el);
-                if (idx > -1) {
-                    return args[idx];
-                }
-            })
-        );
-    } else {
-        return perform(proc.body);
-    }
-}
-
 window.Turtle = function(canvas) {
     var animation_rate = 40;
     var ctx = canvas.getContext('2d');
@@ -206,6 +183,29 @@ window.Turtle = function(canvas) {
 
     init_context(ctx);
 
+    function cue_procedure(name, args = []) {
+        var proc = turtle.procedures[name];
+        if (!proc) {
+            return name + " is not defined.";
+        }
+        if (args.length) {
+            var _args = proc.args;
+            if (args.length !== _args.length) {
+                return "Error: " + _args.length + " arguments expected.";
+            }
+            perform(
+                walk(proc.body, (el) => {
+                    var idx = _args.indexOf(el);
+                    if (idx > -1) {
+                        return args[idx];
+                    }
+                })
+            );
+        } else {
+            return perform(proc.body);
+        }
+    }
+
     function draw_line_to_x_boundary(x_boundary_pos) {
         var {x, y} = turtle.pos;
         var {sin, cos} = turtle;
@@ -235,20 +235,6 @@ window.Turtle = function(canvas) {
         ctx.restore();
         turtle.pos.x = x;
         turtle.pos.y = y;
-    }
-
-    function run_line(line) {
-        if (!Array.isArray(line)) {
-            throw new Error("Array expected");
-        }
-        var op = line[0];
-        if (ops[op]) {
-            ops[op].apply(ops, line.slice(1));
-        } else if (turtle.procedures[op]) {
-            run_procedure(op, line.slice(1));
-        } else {
-            return "Unknown operator: " + op;
-        }
     }
 
     var cmd_buffer = (function() {
@@ -461,39 +447,109 @@ window.Turtle = function(canvas) {
     ops.rt = ops.right;
     ops.lt = ops.left;
 
-    var turtle_power = {
-        clear: ops.clear,
+    var api_cmd = {
         forward: function(distance) {
-            cmd_runner.cue([['forward', distance]]);
+            return ['forward', distance];
+        },
+        back: function(distance) {
+            return ['back', distance];
+        },
+        left: function(angle) {
+            return ['left', angle];
+        },
+        right: function(angle) {
+            return ['right', angle];
+        },
+    };
+
+    function Ast_Builder() {
+        this.ast = [];
+        return this;
+    };
+
+    Object.assign(Ast_Builder.prototype, {
+        forward: function(distance) {
+            this.ast.push(api_cmd.forward(distance));
             return this;
         },
         back: function(distance) {
-            cmd_runner.cue([['back', distance]]);
+            this.ast.push(api_cmd.back(distance));
             return this;
         },
         left: function(angle) {
-            cmd_runner.cue([['left', angle]]);
+            this.ast.push(api_cmd.left(angle));
             return this;
         },
         right: function(angle) {
-            cmd_runner.cue([['right', angle]]);
+            this.ast.push(api_cmd.right(angle));
             return this;
         },
-        to: ops.to,
-        do: run_procedure,
-        perform,
         repeat: function(count, body) {
-            var fn = false;
-            if (typeof body === 'function') {
-                for (var x = 0; x < count; ++x) {
-                    body();
-                }
-                return this;
-            } else if (!Array.isArray(body)) {
+            var cmd = ['repeat', count];
+            if (Array.isArray(body)) {
+                cmd.push(body);
+            } else if ('function' === typeof body) {
+                var api = new Ast_Builder();
+                body(api);
+                cmd.push(api.ast);
+            } else {
                 throw new Error("Repeat expects a function or an array for its body.");
             }
+            this.ast.push(cmd);
+            return this;
+        },
+    });
 
-            cmd_runner.cue([['repeat', count, body]]);
+    Object.assign(Ast_Builder.prototype, {
+        fd: Ast_Builder.prototype.forward,
+        backward: Ast_Builder.prototype.back,
+        bk: Ast_Builder.prototype.back,
+        fd: Ast_Builder.prototype.forward,
+        lt: Ast_Builder.prototype.left,
+        rt: Ast_Builder.prototype.right,
+    });
+
+
+    var turtle_power = {
+        clear: function() {
+            ops.clear();
+            return this;
+        },
+        forward: function(distance) {
+            cmd_runner.cue([api_cmd.forward(distance)]);
+            return this;
+        },
+        back: function(distance) {
+            cmd_runner.cue([api_cmd.back(distance)]);
+            return this;
+        },
+        left: function(angle) {
+            cmd_runner.cue([api_cmd.left(angle)]);
+            return this;
+        },
+        right: function(angle) {
+            cmd_runner.cue([api_cmd.right(angle)]);
+            return this;
+        },
+        to: function(name, args, body) {
+            if ('function' === typeof body) {
+                var api = new Ast_Builder();
+                body.apply(this, [api].concat(args));
+                ops.to(name, args, api.ast);
+            } else if (!Array.isArray(body)) {
+                throw new Error("to expects a function or an array for its body.");
+            } else {
+                ops.to(name, args, body);
+            }
+        },
+        do: function() {
+            cue_procedure(arguments[0], Array.prototype.slice.call(arguments, 1));
+            return this;
+        },
+        perform,
+        repeat: function(count, body) {
+            var ast_builder = new Ast_Builder()
+            cmd_runner.cue(ast_builder.repeat(count, body).ast);
             return this;
         },
         stop: turtle.stop.bind(turtle),
