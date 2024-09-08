@@ -296,7 +296,7 @@ window.Turtle = function(canvas) {
             var procedure = turtle.procedures[line[0]];
             switch(true) {
                 case 'repeat' === line[0]: {
-                    if (cmd.acc++ < line[1]) {
+                    if (cmd.acc++ < +line[1]) {
                         load_body(cmd.body);
                         run(done);
                     } else {
