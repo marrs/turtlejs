@@ -49,10 +49,9 @@
         <script src="logo.js"></script>
         <script src="turtle-geometry.js"></script>
         <script>
-            var tl = turtle(document.getElementById('canvas'));
-            tl.clear();
-            window.turtle = tl;
-            var logo = Logo(tl);
+            var turtle = Turtle(document.getElementById('canvas'));
+            turtle.clear();
+            var logo = Logo(turtle);
             var txt = document.getElementById('logo-script');
             var elResponse = document.getElementById('logo-response');
             var cmdHistory = document.getElementById('cmd-history');
@@ -136,7 +135,7 @@
 
             var stop = document.getElementById('stop');
             stop.addEventListener('click', function(evt) {
-                tl.stop();
+                turtle.stop();
             });
         </script>
     </body>

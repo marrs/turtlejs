@@ -103,7 +103,7 @@ function run_procedure(name, args = []) {
     }
 }
 
-window.turtle = function(canvas) {
+window.Turtle = function(canvas) {
     var animation_rate = 40;
     var ctx = canvas.getContext('2d');
 
