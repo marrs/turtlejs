@@ -3,6 +3,8 @@
 TurtleJS provides an engine for performing drawing operations on a 2D canvas
 using the classic LOGO language.
 
+TurtleJS has no dependencies and is as small as is practically possible without sacrificing utility.
+
 In the world of LOGO, a turtle is a drawing entity that can be directed by the
 user to draw lines on a canvas with commands such as as `forward`, `back`, `right`, and `left`.
 
@@ -11,7 +13,12 @@ instance directly, or by providing an expression in the form of an abstract
 syntax tree.  This allows you to implement a LOGO interpreter without having
 to worry about implementing any of the underlying drawing operations yourself.
 
-TurtleJS does not provide a LOGO interpreter itself.
+TurtleJS does not provide a LOGO interpreter itself, but see [logo.js ](demo/logo.js) for inspiration.
+
+## Demo
+
+This repository contains a demo of TurtleJS that can be run by serving it
+from the project root.
 
 ## Developer Guide
 
@@ -99,7 +106,7 @@ The callback's first argument is the api object, followed by the
 arguments defined in the previous array.
 
 Alternatively, the body can be represented by an array of
-abstract turtle syntax.
+AST instructions.
 
 Redefinition of procedures is allowed by the API.
 
