@@ -22,6 +22,21 @@ from the project root.
 
 ## Developer Guide
 
+> [!WARNING]
+> The API herein is experimental and subject to change. As such, there
+> is no release as yet.
+
+## Licensing
+
+This code is licensed under the GNU General Public Licence (GPL) v3.  In
+short, you are free to use this code, even for commercial use, as long as
+you provide the source code of both this software and your derivative work
+to the end user under the terms and conditions of the GPL.  See
+[LICENCE](LICENCE) for more information.
+
+If you would like to license this software for proprietary use, please
+send me a message on Github.
+
 ### Setting Up
 
 A turtle can be instantiated by calling `Turtle` with the canvas
